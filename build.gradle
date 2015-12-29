@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+version = '1.0.0'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
