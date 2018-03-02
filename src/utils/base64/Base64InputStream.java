@@ -206,17 +206,13 @@ public class Base64InputStream extends FilterInputStream {
                     return length;
                 } else {
                     if (endReached) {
-                        if (nextPosition == decodedBytes.length) {
-                            return -1;
-                        } else {
-                            int l = decodedBytes.length - nextPosition;
-                            
-                            System.arraycopy(decodedBytes, nextPosition, bytes, offset, l);
-                            
-                            nextPosition = decodedBytes.length;
-                            
-                            return l;
-                        }
+                        int l = decodedBytes.length - nextPosition;
+                        
+                        System.arraycopy(decodedBytes, nextPosition, bytes, offset, l);
+                        
+                        nextPosition = decodedBytes.length;
+                        
+                        return l;
                     } else {
                         int l = decodedBytes.length - nextPosition;
                         

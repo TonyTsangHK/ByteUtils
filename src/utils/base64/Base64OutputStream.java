@@ -104,8 +104,8 @@ public class Base64OutputStream extends FilterOutputStream {
      * @param lineBreakStr string used for line breaks
      */
     public Base64OutputStream(
-            OutputStream os, Base64Convertor.Convertor convertor, boolean chunked, boolean padding,
-            byte paddingByte, String lineBreakStr
+        OutputStream os, Base64Convertor.Convertor convertor, boolean chunked, boolean padding,
+        byte paddingByte, String lineBreakStr
     ) {
         this(os, convertor, chunked, padding, paddingByte, lineBreakStr.getBytes());
     }
@@ -121,8 +121,8 @@ public class Base64OutputStream extends FilterOutputStream {
      * @param lineBreakBytes byte used for line breaks
      */
     public Base64OutputStream(
-            OutputStream os, Base64Convertor.Convertor convertor, boolean chunked, boolean padding,
-            byte paddingByte, byte[] lineBreakBytes
+        OutputStream os, Base64Convertor.Convertor convertor, boolean chunked, boolean padding,
+        byte paddingByte, byte[] lineBreakBytes
     ) {
         super(new BufferedOutputStream(os));
         
@@ -189,7 +189,7 @@ public class Base64OutputStream extends FilterOutputStream {
     /**
      * Encode the unencoded data and write it to the underlying output stream.
      * 
-     * @param flag indicating incomplete block (block of 3) should be keep or not
+     * @param keepIncompleteBlock indicating incomplete block (block of 3) should be keep or not
      * 
      * @throws IOException
      */

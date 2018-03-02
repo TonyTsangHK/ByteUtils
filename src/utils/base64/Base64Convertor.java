@@ -22,19 +22,22 @@ public class Base64Convertor {
      */
     public enum Convertor {
         /**
-         * Author's preference not defined in any specification
+         * Author's preference not defined in any specification, using this may cause conflict with standard convertor!!!
          */
         MY      ("my",       _MY_ALPHABET,       _MY_DECODE),
+        
         /**
          * Standard base64 convertor
          */
         STANDARD("standard", _STANDARD_ALPHABET, _STANDARD_DECODE),
-        /**
-         * URL-safe base64 convertor, replacing '+' & ',' / with '-' & '_'
-         */
-        ORDERED ("ordered",  _ORDERED_ALPHABET,  _ORDERED_DECODE),
+
         /**
          * Ordered base64 convertor, encoding table (URL SAFE) follow its ASCII order
+         */
+        ORDERED ("ordered",  _ORDERED_ALPHABET,  _ORDERED_DECODE),
+        
+        /**
+         * URL-safe base64 convertor, replacing '+' & '/' with '-' & '_'
          */
         URL_SAFE("urlSafe",  _URL_SAFE_ALPHABET, _URL_SAFE_DECODE);
         
@@ -43,9 +46,9 @@ public class Base64Convertor {
          */
         public  final String desc;
         private final byte[] ALPHABETS;
-        private final byte[] DECODABETS; 
+        private final byte[] DECODABETS;
         
-        private Convertor(String desc, byte[] ALPHABETS, byte[] DECODABETS) {
+        Convertor(String desc, byte[] ALPHABETS, byte[] DECODABETS) {
             this.desc       = desc;
             this.ALPHABETS  = ALPHABETS;
             this.DECODABETS = DECODABETS;
@@ -329,20 +332,61 @@ public class Base64Convertor {
         }
         return shiftDecode(bytes, c);
     }
+
+    /**
+     * Suggest base64 convertor by detecting special character within encoded string
+     * If no distinguishable character is found, suggest standard convertor
+     * 
+     * MY & ORDERED convertor will be ignored, since they may cause issues
+     * 
+     * @param base64String encoded base64 string
+     *
+     * @return suggested convertor, default STANDARD
+     */
+    public static Convertor suggestConvertor(String base64String) {
+        for (int i = 0; i < base64String.length(); i++) {
+            char ch = base64String.charAt(i);
+            
+            // Only suggest standard and url safe convertor
+            switch (ch) {
+                case '+':
+                case '/':
+                    return Convertor.STANDARD;
+                case '-':
+                case '_':
+                    return Convertor.URL_SAFE;
+            }
+        }
+        
+        // No distinguishable character found, suggest standard
+        // Assuming input contains no invalid character, since this method is not for validation
+        return Convertor.STANDARD;
+    }
+
+    /**
+     * Decode base64 encoded string with suggested convertor
+     * 
+     * @param base64String encoded base64 string
+     * 
+     * @return decoded bytes
+     */
+    public static byte[] decode(String base64String) {
+        return decode(base64String, suggestConvertor(base64String));
+    }
     
     /**
      * Decode encoded string to its original binary bytes
      * 
-     * @param str encoded string
+     * @param base64String base64 encoded string
      * @param convertor target convertor
      * @return original binary bytes
      */
-    public static byte[] decode(String str, Convertor convertor) {
-        byte[] bytes = new byte[str.length()];
+    public static byte[] decode(String base64String, Convertor convertor) {
+        byte[] bytes = new byte[base64String.length()];
         
         int c = 0;
-        for (int i = 0; i < str.length(); i++) {
-            byte byt = convertor.decode(str.charAt(i));
+        for (int i = 0; i < base64String.length(); i++) {
+            byte byt = convertor.decode(base64String.charAt(i));
             if (byt >= 0) {
                 bytes[c++] = byt;
             }
@@ -414,6 +458,7 @@ public class Base64Convertor {
 
     /**
      * Decode input stream data(Base64 encoded) to byte array
+     * 
      * @param is input stream
      * @param convertor target convertor
      * @param closeStream close input stream after decoding
@@ -503,6 +548,17 @@ public class Base64Convertor {
                 convertor, true
         );
     }
+
+    /**
+     * Encode binary bytes to base64 with defaults: Standard convertor, not chunked, with padding
+     * 
+     * @param bytes source binary bytes
+     * 
+     * @return encoded bytes
+     */
+    public static byte[] encode(byte[] bytes) {
+        return encode(bytes, Convertor.STANDARD, false, true);
+    }
     
     /**
      * Encode binary bytes to Base64
@@ -511,7 +567,7 @@ public class Base64Convertor {
      * @param convertor target convertor
      * @param chunked result should be chunked
      * @param padding result should be padded (=)
-     * @return encdoed bytes
+     * @return encoded bytes
      */
     public static byte[] encode(byte[] bytes, Convertor convertor, boolean chunked, boolean padding) {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
@@ -535,7 +591,7 @@ public class Base64Convertor {
      * @param length number of byte to encode
      * @param chunked result should be chunked
      * @param padding result should be padded (=)
-     * @return encdoed bytes
+     * @return encoded bytes
      */
     public static byte[] encode(
             byte[] bytes, Convertor convertor, int offset, int length, boolean chunked, boolean padding
@@ -545,6 +601,17 @@ public class Base64Convertor {
         System.arraycopy(bytes, offset, targetBytes, 0, length);
         
         return encode(targetBytes, convertor, chunked, padding);
+    }
+
+    /**
+     * Encode binary bytes to base64 String, with defaults: Standard convertor, not chunked, with padding
+     * 
+     * @param bytes source binary bytes
+     * 
+     * @return encoded base64 String
+     */
+    public static String encodeToString(byte[] bytes) {
+        return encodeToString(bytes, Convertor.STANDARD, false, true);
     }
     
     /**
@@ -667,8 +734,8 @@ public class Base64Convertor {
      * @throws IOException
      */
     public static void encode(
-            InputStream is, OutputStream os, Convertor convertor, 
-            boolean chunked, boolean padding, boolean closeStream
+        InputStream is, OutputStream os, Convertor convertor, 
+        boolean chunked, boolean padding, boolean closeStream
     ) throws IOException {
         // Simply ignore chunk & padding when URL_SAFE convertor is used
         if (convertor == Convertor.URL_SAFE) {
@@ -731,9 +798,9 @@ public class Base64Convertor {
     public static void encodeFileToFile(File input, File output, Convertor convertor, boolean chunked, boolean padding) 
             throws IOException {
         encode(
-                new BufferedInputStream(new FileInputStream(input)),
-                new BufferedOutputStream(new FileOutputStream(output)),
-                convertor, chunked, padding, true
+            new BufferedInputStream(new FileInputStream(input)),
+            new BufferedOutputStream(new FileOutputStream(output)),
+            convertor, chunked, padding, true
         );
     }
     
@@ -750,9 +817,9 @@ public class Base64Convertor {
     public static void encodeFileToFile(String input, String output, Convertor convertor, boolean chunked, boolean padding) 
             throws IOException {
         encode(
-                new BufferedInputStream(new FileInputStream(input)),
-                new BufferedOutputStream(new FileOutputStream(output)),
-                convertor, chunked, padding, true
+            new BufferedInputStream(new FileInputStream(input)),
+            new BufferedOutputStream(new FileOutputStream(output)),
+            convertor, chunked, padding, true
         );
     }
 }
